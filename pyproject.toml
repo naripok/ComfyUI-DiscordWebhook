@@ -6,10 +6,10 @@ license = {file = "LICENSE"}
 dependencies = ["discord_webhook[async]"]
 
 [project.urls]
-Repository = "https://github.com/Dayuppy/ComfyUI-DiscordWebhook"
+Repository = "https://github.com/naripok/ComfyUI-DiscordWebhook"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = "dayuppy"
+PublisherId = "naripok"
 DisplayName = "Discord Webhook"
 Icon = ""
