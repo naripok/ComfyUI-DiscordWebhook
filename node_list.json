@@ -1,4 +1,3 @@
 {
-    "Set Discord Webhook": "Allows for setting the Discord Webhook URL used by the 'Use Discord Webhook' node.",
-    "Use Discord Webhook": "This is the main node used for routing image and string inputs to Discord."
+  "Use Discord Webhook": "This is the main node used for routing image and string inputs to Discord."
 }

@@ -22,13 +22,15 @@ Copyright (C) 2024  Dayuppy
 @description: A very simple Discord webhook integration node for ComfyUI that lets you post images and text.
 """
 
-import os
-import tempfile
-import shutil
-import numpy as np
 import asyncio
-from PIL import Image, ImageDraw
+import os
+import shutil
+import tempfile
+
+import numpy as np
 from discord_webhook import AsyncDiscordWebhook
+from PIL import Image, ImageDraw
+
 
 def create_default_image():
     """Create a simple TV test pattern image."""
@@ -36,32 +38,13 @@ def create_default_image():
     colors = ["white", "yellow", "cyan", "green", "magenta", "red", "blue", "black"]
     bar_width = 128 // len(colors)
     draw = ImageDraw.Draw(image)
-    
+
     for i, color in enumerate(colors):
         draw.rectangle([i * bar_width, 0, (i + 1) * bar_width, 128], fill=color)
-    
+
     return image
 
-class DiscordSetWebhook:
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("DUMMY IMAGE",)
-    OUTPUT_NODE = True
-    FUNCTION = "execute"
-    CATEGORY = "Discord"
 
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {"required": {"URL": ("STRING",)}}
-    
-    def execute(self, URL):
-        if not URL.startswith("https://discord.com/api/webhooks/"):
-            raise ValueError("Invalid URL format. URL should start with 'https://discord.com/api/webhooks/' Please reference https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks")
-        
-        with open("discord_webhook_url.txt", "w") as f:
-            f.write(URL)
-            
-        return (create_default_image(),)
-        
 class DiscordPostViaWebhook:
     RETURN_TYPES = ("IMAGE",)
     OUTPUT_NODE = True
@@ -71,9 +54,7 @@ class DiscordPostViaWebhook:
     @classmethod
     def INPUT_TYPES(cls):
         return {
-            "required": {
-                "image": ("IMAGE",)
-                },
+            "required": {"image": ("IMAGE",)},
             "optional": {
                 "send_Message": ("BOOLEAN", {"default": True}),
                 "send_Image": ("BOOLEAN", {"default": True}),
@@ -94,7 +75,7 @@ class DiscordPostViaWebhook:
         """Process the image (or batch of images) and return them in a format suitable for Discord."""
         if image is None:
             image = create_default_image()
-        
+
         images_to_send = []
 
         # Check if it's a batched image (4D array: [batch_size, height, width, channels])
@@ -110,7 +91,9 @@ class DiscordPostViaWebhook:
                 image = Image.fromarray(np.clip(image * 255, 0, 255).astype(np.uint8))
                 images_to_send.append(image)
             else:
-                raise ValueError("Input image array must be 3D or 4D (batch of images).")
+                raise ValueError(
+                    "Input image array must be 3D or 4D (batch of images)."
+                )
 
         elif hasattr(image, "cpu"):
             array = image.cpu().numpy()
@@ -118,8 +101,12 @@ class DiscordPostViaWebhook:
             # Handle batched images
             if array.ndim == 4:  # Batch of images
                 for i in range(array.shape[0]):
-                    img_array = array[i]  # Only access the i-th image, no squeeze needed
-                    img = Image.fromarray(np.clip(img_array * 255, 0, 255).astype(np.uint8))
+                    img_array = array[
+                        i
+                    ]  # Only access the i-th image, no squeeze needed
+                    img = Image.fromarray(
+                        np.clip(img_array * 255, 0, 255).astype(np.uint8)
+                    )
                     images_to_send.append(img)
             elif array.ndim == 3:
                 # Single image
@@ -149,22 +136,22 @@ class DiscordPostViaWebhook:
 
         return files
 
-    def execute(self, image, send_Message=True, send_Image=True, message="", prepend_message=""):
-        with open("discord_webhook_url.txt", "r") as f:
-            webhook_url = f.read().strip()
-        
+    def execute(
+        self, image, send_Message=True, send_Image=True, message="", prepend_message=""
+    ):
+        webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
         if not webhook_url:
-            raise ValueError("Webhook URL is empty.")
-        
+            raise ValueError("DISCORD_WEBHOOK_URL environment variable is not set.")
+
         if send_Message:
             message = f"{prepend_message}\n{message}"
-        
+
         files = self.process_image(image) if send_Image else None
-        
+
         if files:
             # Split files into batches of 4 (Discord limit)
-            batches = [files[i:i + 4] for i in range(0, len(files), 4)]
-            
+            batches = [files[i : i + 4] for i in range(0, len(files), 4)]
+
             # Send multiple webhooks if necessary
             for batch in batches:
                 asyncio.run(self.send_webhook(webhook_url, message, batch))
@@ -174,12 +161,7 @@ class DiscordPostViaWebhook:
 
         return (image,)
 
-NODE_CLASS_MAPPINGS = {
-    "DiscordSetWebhook": DiscordSetWebhook,
-    "DiscordPostViaWebhook": DiscordPostViaWebhook
-}
 
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "DiscordSetWebhook": "Set Discord Webhook",
-    "DiscordPostViaWebhook": "Use Discord Webhook"
-}
+NODE_CLASS_MAPPINGS = {"DiscordPostViaWebhook": DiscordPostViaWebhook}
+
+NODE_DISPLAY_NAME_MAPPINGS = {"DiscordPostViaWebhook": "Use Discord Webhook"}

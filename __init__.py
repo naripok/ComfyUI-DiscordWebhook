@@ -22,6 +22,10 @@ Copyright (C) 2024  Dayuppy
 @description: A very simple Discord webhook integration node for ComfyUI that lets you post images and text.
 """
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from .nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
