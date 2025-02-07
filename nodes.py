@@ -1,27 +1,3 @@
-"""
-Copyright (C) 2024  Dayuppy
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
-    USA
-
-@author: Dayuppy
-@title: Discord Webhook
-@nickname: DiscordWebhook
-@description: A very simple Discord webhook integration node for ComfyUI that lets you post images and text.
-"""
-
 import asyncio
 import os
 import shutil
@@ -46,7 +22,7 @@ def create_default_image():
 
 
 class DiscordPostViaWebhook:
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ()
     OUTPUT_NODE = True
     FUNCTION = "execute"
     CATEGORY = "Discord"
@@ -56,10 +32,7 @@ class DiscordPostViaWebhook:
         return {
             "required": {"image": ("IMAGE",)},
             "optional": {
-                "send_Message": ("BOOLEAN", {"default": True}),
-                "send_Image": ("BOOLEAN", {"default": True}),
-                "message": ("STRING", {"default": "", "multiline": True}),
-                "prepend_message": ("STRING", {"default": "", "multiline": True}),
+                "subtitle": ("STRING", {"default": "", "multiline": True}),
             },
         }
 
@@ -136,17 +109,12 @@ class DiscordPostViaWebhook:
 
         return files
 
-    def execute(
-        self, image, send_Message=True, send_Image=True, message="", prepend_message=""
-    ):
+    def execute(self, image, subtitle=""):
         webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
         if not webhook_url:
             raise ValueError("DISCORD_WEBHOOK_URL environment variable is not set.")
 
-        if send_Message:
-            message = f"{prepend_message}\n{message}"
-
-        files = self.process_image(image) if send_Image else None
+        files = self.process_image(image)
 
         if files:
             # Split files into batches of 4 (Discord limit)
@@ -154,10 +122,10 @@ class DiscordPostViaWebhook:
 
             # Send multiple webhooks if necessary
             for batch in batches:
-                asyncio.run(self.send_webhook(webhook_url, message, batch))
+                asyncio.run(self.send_webhook(webhook_url, subtitle, batch))
         else:
             # No images to send, just send the message
-            asyncio.run(self.send_webhook(webhook_url, message))
+            asyncio.run(self.send_webhook(webhook_url, subtitle))
 
         return (image,)
 
