@@ -3,7 +3,7 @@ name = "comfyui-discordwebhook"
 description = "A very simple Discord webhook integration node for ComfyUI that lets you post images and text."
 version = "1.0.0"
 license = {file = "LICENSE"}
-dependencies = ["discord_webhook[async]"]
+dependencies = ["discord_webhook[async]", "python-dotenv"]
 
 [project.urls]
 Repository = "https://github.com/naripok/ComfyUI-DiscordWebhook"
